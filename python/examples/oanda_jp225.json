@@ -1,0 +1,35 @@
+{
+  "env": "practice",
+  "instrument": "JP225_JPY",
+  "granularity_entry": "M5",
+  "granularity_mid":   "H1",
+  "granularity_upper": "D",
+  "candle_lookback":   500,
+
+  "long_threshold":  10.0,
+  "short_threshold": -10.0,
+  "opposite_exit_score": 8.0,
+  "risk_pct":      0.5,
+  "sl_atr_mult":   1.5,
+  "tp_rr":         2.0,
+  "trail_start_rr":1.0,
+  "atr_period":    14,
+  "aps_lookback":  20,
+  "aps_div_lookback": 30,
+
+  "dry_run":              true,
+  "poll_buffer_sec":      8,
+  "max_units_per_trade":  20,
+  "max_daily_loss_pct":   3.0,
+  "max_consec_losses":    4,
+  "heartbeat_sec":        300,
+  "log_csv_path":         "oanda_runner.csv",
+
+  "weights": {
+    "w_aps_pressure": 2.5,
+    "w_aps_divergence": 3.0,
+    "w_d1_srsi": 1.0, "w_d1_rci": 1.0, "w_d1_macd": 1.5,
+    "w_h1_srsi": 1.5, "w_h1_rci": 1.5, "w_h1_macd": 2.0,
+    "w_m5_srsi": 2.0, "w_m5_rci": 2.0, "w_m5_macd": 1.0
+  }
+}

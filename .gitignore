@@ -3,3 +3,7 @@ __pycache__/
 *.pyo
 .DS_Store
 .venv/
+.env
+python/.env
+python/*.csv
+python/oanda_runner.csv
