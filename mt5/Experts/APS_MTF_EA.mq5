@@ -13,6 +13,7 @@
 #include <APS_MTF/Scoring.mqh>
 #include <APS_MTF/RiskManager.mqh>
 #include <APS_MTF/SessionFilter.mqh>
+#include <APS_MTF/CsvLogger.mqh>
 
 //+------------------------------------------------------------------+
 //| Inputs                                                           |
@@ -65,8 +66,10 @@ input bool              InpUseSessionFilter  = true;
 input int               InpJstOffsetMinutes  = 0;
 input bool              InpAllowOvernight    = false;
 
-input group "=== Debug ==="
+input group "=== Debug / Logging ==="
 input bool              InpVerboseLog        = false;
+input bool              InpCsvLog            = false;
+input string            InpCsvLogPath        = "APS_MTF_signals.csv";
 
 //+------------------------------------------------------------------+
 //| Globals                                                          |
@@ -76,6 +79,7 @@ CTFSignals        g_d1, g_h1, g_m5;
 CScoring          g_scoring;
 CRiskManager      g_risk;
 CSessionFilter    g_session;
+CCsvLogger        g_logger;
 
 datetime          g_last_bar_time = 0;   // last processed M5 bar open time
 
@@ -123,6 +127,7 @@ int OnInit()
      }
 
    g_session.Init(InpUseSessionFilter, InpJstOffsetMinutes);
+   g_logger.Init(InpCsvLog, InpCsvLogPath);
    g_last_bar_time = 0;
 
    PrintFormat("[APS_MTF] Initialized on %s. TF lower=%s mid=%s upper=%s.",
@@ -191,6 +196,7 @@ void OnTick()
       Print("[APS_MTF] ", g_scoring.Format(bd));
 
    const bool has_pos = g_risk.HasOpenPosition();
+   string action = "HOLD";
 
    // Exit on opposite-side dominance.
    if(has_pos)
@@ -206,11 +212,19 @@ void OnTick()
          if(type == POSITION_TYPE_BUY  && bd.bear_total >= InpOppositeExitScore)
            {
             g_risk.CloseAll("opposite-signal");
+            action = "EXIT_LONG";
+            g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
+                         EnumToString(InpTfLower), bd, action,
+                         SymbolInfoDouble(_Symbol, SYMBOL_BID));
             return;
            }
          if(type == POSITION_TYPE_SELL && bd.bull_total >= InpOppositeExitScore)
            {
             g_risk.CloseAll("opposite-signal");
+            action = "EXIT_SHORT";
+            g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
+                         EnumToString(InpTfLower), bd, action,
+                         SymbolInfoDouble(_Symbol, SYMBOL_ASK));
             return;
            }
          break;
@@ -218,24 +232,42 @@ void OnTick()
      }
 
    if(has_pos)
+     {
+      g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
+                   EnumToString(InpTfLower), bd, "IN_POSITION",
+                   SymbolInfoDouble(_Symbol, SYMBOL_BID));
       return;
+     }
 
    // Entry gating: session + risk circuit breakers.
-   if(!g_session.CanEnter(TimeCurrent()))
+   if(!g_session.CanEnter(TimeCurrent()) || !g_risk.CanOpenNew())
+     {
+      g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
+                   EnumToString(InpTfLower), bd, "BLOCKED",
+                   SymbolInfoDouble(_Symbol, SYMBOL_BID));
       return;
-   if(!g_risk.CanOpenNew())
-      return;
+     }
 
    if(total >= InpLongThreshold)
      {
-      if(g_risk.OpenPosition(true) && InpVerboseLog)
-         PrintFormat("[APS_MTF] LONG opened. score=%.2f", total);
+      if(g_risk.OpenPosition(true))
+        {
+         action = "OPEN_LONG";
+         if(InpVerboseLog) PrintFormat("[APS_MTF] LONG opened. score=%.2f", total);
+        }
      }
    else if(total <= InpShortThreshold)
      {
-      if(g_risk.OpenPosition(false) && InpVerboseLog)
-         PrintFormat("[APS_MTF] SHORT opened. score=%.2f", total);
+      if(g_risk.OpenPosition(false))
+        {
+         action = "OPEN_SHORT";
+         if(InpVerboseLog) PrintFormat("[APS_MTF] SHORT opened. score=%.2f", total);
+        }
      }
+
+   g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
+                EnumToString(InpTfLower), bd, action,
+                SymbolInfoDouble(_Symbol, SYMBOL_BID));
   }
 
 //+------------------------------------------------------------------+

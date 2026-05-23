@@ -1,0 +1,47 @@
+; APS_MTF_EA Strategy Tester preset.
+; Load from MT5: Tester > Inputs > Load > APS_MTF_EA.set
+; Lines with "||start||step||stop||Y" are enabled for optimization.
+; Lines with "||...||N" or no || tail are fixed.
+
+InpMagicNumber=20260523
+InpComment=APS_MTF
+
+InpTfLower=5
+InpTfMiddle=16385
+InpTfUpper=16408
+
+InpApsLookback=20||10||5||30||Y
+InpApsDivLookback=30||20||10||50||Y
+InpApsUseRealVolume=false
+
+InpSrsiRsiPeriod=14
+InpSrsiStochPeriod=14
+InpSrsiSmoothK=3
+InpSrsiSmoothD=3
+
+InpRciShort=9
+InpRciLong=26
+
+InpMacdFast=12
+InpMacdSlow=26
+InpMacdSignal=9
+
+InpLongThreshold=10.0||6.0||1.0||14.0||Y
+InpShortThreshold=-10.0||-14.0||1.0||-6.0||Y
+InpOppositeExitScore=8.0||5.0||1.0||12.0||Y
+
+InpRiskPct=1.0||0.5||0.5||2.0||Y
+InpSlAtrMult=1.5||1.0||0.25||2.5||Y
+InpTpRR=2.0||1.5||0.25||3.0||Y
+InpTrailStartRR=1.0||0.5||0.25||2.0||Y
+InpMaxDailyLossPct=3.0
+InpMaxConsecLosses=4
+InpAtrPeriod=14
+
+InpUseSessionFilter=true
+InpJstOffsetMinutes=0
+InpAllowOvernight=false
+
+InpVerboseLog=false
+InpCsvLog=false
+InpCsvLogPath=APS_MTF_signals.csv

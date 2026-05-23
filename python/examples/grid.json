@@ -1,0 +1,30 @@
+{
+  "params": {
+    "long_threshold": 10.0,
+    "short_threshold": -10.0,
+    "opposite_exit_score": 8.0,
+    "risk_pct": 1.0,
+    "sl_atr_mult": 1.5,
+    "tp_rr": 2.0,
+    "trail_start_rr": 1.0,
+    "atr_period": 14,
+    "aps_lookback": 20,
+    "aps_div_lookback": 30,
+    "initial_equity": 1000000.0,
+    "fee_bps": 1.0,
+    "slippage_bps": 1.0
+  },
+  "weights": {
+    "w_aps_pressure": 2.5,
+    "w_aps_divergence": 3.0,
+    "w_d1_srsi": 1.0, "w_d1_rci": 1.0, "w_d1_macd": 1.5,
+    "w_h1_srsi": 1.5, "w_h1_rci": 1.5, "w_h1_macd": 2.0,
+    "w_m5_srsi": 2.0, "w_m5_rci": 2.0, "w_m5_macd": 1.0
+  },
+  "grid": {
+    "long_threshold":  [7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0],
+    "short_threshold": [-7.0, -8.0, -9.0, -10.0, -11.0, -12.0, -13.0],
+    "sl_atr_mult":     [1.0, 1.5, 2.0],
+    "tp_rr":           [1.5, 2.0, 2.5]
+  }
+}
