@@ -7,3 +7,4 @@ __pycache__/
 python/.env
 python/*.csv
 python/oanda_runner.csv
+.streamlit/secrets.toml

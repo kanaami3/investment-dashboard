@@ -1,0 +1,21 @@
+# Streamlit config — applied both locally and on Streamlit Cloud.
+
+[theme]
+base = "dark"
+primaryColor = "#3498db"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1c1f26"
+textColor = "#e6e6e6"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+# Cloud sets its own port; this is only honored locally.
+headless = true
+runOnSave = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true

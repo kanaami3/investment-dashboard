@@ -9,6 +9,7 @@
 | `03_runbook.md`           | 手順書 (Phase 0〜6 の作業手順)                  | 利用者 (運用)    |
 | `04_tasks.md`             | タスクリスト (進捗トラッキング)                  | 利用者           |
 | `05_stock_tools.md`       | 株式 TA ダッシュボード + 毎時 Discord 通知       | 利用者           |
+| `06_streamlit_deploy.md`  | Streamlit Community Cloud デプロイ手順           | 利用者           |
 
 ## 読む順番
 
