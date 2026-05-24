@@ -52,6 +52,19 @@ input double            InpLongThreshold     = 10.0;
 input double            InpShortThreshold    = -10.0;
 input double            InpOppositeExitScore = 8.0;
 
+input group "=== Scoring weights (defaults match CScoring::DefaultWeights) ==="
+input double            InpWApsPressure      = 2.5;
+input double            InpWApsDivergence    = 3.0;
+input double            InpWD1Srsi           = 1.0;
+input double            InpWD1Rci            = 1.0;
+input double            InpWD1Macd           = 1.5;
+input double            InpWH1Srsi           = 1.5;
+input double            InpWH1Rci            = 1.5;
+input double            InpWH1Macd           = 2.0;
+input double            InpWM5Srsi           = 2.0;
+input double            InpWM5Rci            = 2.0;
+input double            InpWM5Macd           = 1.0;
+
 input group "=== Risk ==="
 input double            InpRiskPct           = 1.0;
 input double            InpSlAtrMult         = 1.5;
@@ -115,7 +128,13 @@ int OnInit()
       return INIT_FAILED;
      }
 
-   g_scoring.SetWeights(CScoring::DefaultWeights());
+   ScoreWeights w;
+   w.w_aps_pressure   = InpWApsPressure;
+   w.w_aps_divergence = InpWApsDivergence;
+   w.w_d1_srsi = InpWD1Srsi;  w.w_d1_rci = InpWD1Rci;  w.w_d1_macd = InpWD1Macd;
+   w.w_h1_srsi = InpWH1Srsi;  w.w_h1_rci = InpWH1Rci;  w.w_h1_macd = InpWH1Macd;
+   w.w_m5_srsi = InpWM5Srsi;  w.w_m5_rci = InpWM5Rci;  w.w_m5_macd = InpWM5Macd;
+   g_scoring.SetWeights(w);
 
    if(!g_risk.Init(_Symbol, InpMagicNumber, InpComment,
                    InpRiskPct, InpSlAtrMult, InpTpRR, InpTrailStartRR,
@@ -159,6 +178,30 @@ bool IsNewBar()
   }
 
 //+------------------------------------------------------------------+
+//| Build the execution context captured alongside every CSV row.    |
+//+------------------------------------------------------------------+
+LogContext BuildContext(const bool session_ok, const bool risk_ok)
+  {
+   LogContext c        = CCsvLogger::EmptyContext();
+   c.atr               = g_risk.CurrentATR();
+   c.spread_points     = (SymbolInfoDouble(_Symbol, SYMBOL_ASK)
+                          - SymbolInfoDouble(_Symbol, SYMBOL_BID))
+                       / MathMax(_Point, 1e-10);
+   c.equity            = AccountInfoDouble(ACCOUNT_EQUITY);
+   c.balance           = AccountInfoDouble(ACCOUNT_BALANCE);
+   c.long_thr          = InpLongThreshold;
+   c.short_thr         = InpShortThreshold;
+
+   string reason = "";
+   if(!session_ok) reason = "session";
+   if(!risk_ok)    reason = (StringLen(reason) > 0) ? (reason + "+risk") : "risk";
+   c.block_reason = reason;
+
+   g_risk.PositionSnapshot(c.pos_type, c.pos_volume, c.pos_pl);
+   return c;
+  }
+
+//+------------------------------------------------------------------+
 //| OnTick                                                           |
 //+------------------------------------------------------------------+
 void OnTick()
@@ -195,7 +238,9 @@ void OnTick()
    if(InpVerboseLog)
       Print("[APS_MTF] ", g_scoring.Format(bd));
 
-   const bool has_pos = g_risk.HasOpenPosition();
+   const datetime bar_t   = iTime(_Symbol, InpTfLower, 1);
+   const string   tf_name = EnumToString(InpTfLower);
+   const bool     has_pos = g_risk.HasOpenPosition();
    string action = "HOLD";
 
    // Exit on opposite-side dominance.
@@ -213,18 +258,18 @@ void OnTick()
            {
             g_risk.CloseAll("opposite-signal");
             action = "EXIT_LONG";
-            g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
-                         EnumToString(InpTfLower), bd, action,
-                         SymbolInfoDouble(_Symbol, SYMBOL_BID));
+            const LogContext ctx = BuildContext(true, true);
+            g_logger.Log(bar_t, _Symbol, tf_name, bd, action,
+                         SymbolInfoDouble(_Symbol, SYMBOL_BID), ctx);
             return;
            }
          if(type == POSITION_TYPE_SELL && bd.bull_total >= InpOppositeExitScore)
            {
             g_risk.CloseAll("opposite-signal");
             action = "EXIT_SHORT";
-            g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
-                         EnumToString(InpTfLower), bd, action,
-                         SymbolInfoDouble(_Symbol, SYMBOL_ASK));
+            const LogContext ctx = BuildContext(true, true);
+            g_logger.Log(bar_t, _Symbol, tf_name, bd, action,
+                         SymbolInfoDouble(_Symbol, SYMBOL_ASK), ctx);
             return;
            }
          break;
@@ -233,18 +278,21 @@ void OnTick()
 
    if(has_pos)
      {
-      g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
-                   EnumToString(InpTfLower), bd, "IN_POSITION",
-                   SymbolInfoDouble(_Symbol, SYMBOL_BID));
+      const LogContext ctx = BuildContext(true, true);
+      g_logger.Log(bar_t, _Symbol, tf_name, bd, "IN_POSITION",
+                   SymbolInfoDouble(_Symbol, SYMBOL_BID), ctx);
       return;
      }
 
-   // Entry gating: session + risk circuit breakers.
-   if(!g_session.CanEnter(TimeCurrent()) || !g_risk.CanOpenNew())
+   // Entry gating: session + risk circuit breakers (evaluate both so we
+   // can report exactly which gate(s) closed in the CSV).
+   const bool session_ok = g_session.CanEnter(TimeCurrent());
+   const bool risk_ok    = g_risk.CanOpenNew();
+   if(!session_ok || !risk_ok)
      {
-      g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
-                   EnumToString(InpTfLower), bd, "BLOCKED",
-                   SymbolInfoDouble(_Symbol, SYMBOL_BID));
+      const LogContext ctx = BuildContext(session_ok, risk_ok);
+      g_logger.Log(bar_t, _Symbol, tf_name, bd, "BLOCKED",
+                   SymbolInfoDouble(_Symbol, SYMBOL_BID), ctx);
       return;
      }
 
@@ -265,9 +313,9 @@ void OnTick()
         }
      }
 
-   g_logger.Log(iTime(_Symbol, InpTfLower, 1), _Symbol,
-                EnumToString(InpTfLower), bd, action,
-                SymbolInfoDouble(_Symbol, SYMBOL_BID));
+   const LogContext ctx = BuildContext(session_ok, risk_ok);
+   g_logger.Log(bar_t, _Symbol, tf_name, bd, action,
+                SymbolInfoDouble(_Symbol, SYMBOL_BID), ctx);
   }
 
 //+------------------------------------------------------------------+

@@ -1,7 +1,20 @@
 ; APS_MTF_EA Strategy Tester preset.
 ; Load from MT5: Tester > Inputs > Load > APS_MTF_EA.set
-; Lines with "||start||step||stop||Y" are enabled for optimization.
-; Lines with "||...||N" or no || tail are fixed.
+; Line format:  Name=value||start||step||stop||Y/N
+;   Y = include in optimization, N = fixed.
+;
+; Recommended optimization order (one phase at a time — leave others fixed):
+;
+;   Phase 1  Thresholds & risk     : InpLongThreshold, InpShortThreshold,
+;                                    InpOppositeExitScore, InpRiskPct,
+;                                    InpSlAtrMult, InpTpRR, InpTrailStartRR
+;   Phase 2  Scoring weights       : InpW* (lock thresholds at Phase 1 winners)
+;   Phase 3  Indicator periods     : InpSrsi*, InpRci*, InpMacd*
+;   Phase 4  APS lookbacks         : InpApsLookback, InpApsDivLookback
+;
+; Use Genetic optimization at all phases. Walk forward (train 6mo / test 2mo)
+; before locking in any winner. Tighter ranges + larger steps usually beat
+; "wide range + tiny steps" for genetic search.
 
 InpMagicNumber=20260523
 InpComment=APS_MTF
@@ -10,26 +23,44 @@ InpTfLower=5
 InpTfMiddle=16385
 InpTfUpper=16408
 
+;== Phase 4: APS lookbacks (default fixed, optimize last) ==
 InpApsLookback=20||10||5||30||Y
 InpApsDivLookback=30||20||10||50||Y
 InpApsUseRealVolume=false
 
-InpSrsiRsiPeriod=14
-InpSrsiStochPeriod=14
-InpSrsiSmoothK=3
-InpSrsiSmoothD=3
+;== Phase 3: indicator periods (default fixed) ==
+InpSrsiRsiPeriod=14||10||2||20||N
+InpSrsiStochPeriod=14||10||2||20||N
+InpSrsiSmoothK=3||2||1||5||N
+InpSrsiSmoothD=3||2||1||5||N
 
-InpRciShort=9
-InpRciLong=26
+InpRciShort=9||7||2||13||N
+InpRciLong=26||20||3||35||N
 
-InpMacdFast=12
-InpMacdSlow=26
-InpMacdSignal=9
+InpMacdFast=12||8||2||16||N
+InpMacdSlow=26||20||3||35||N
+InpMacdSignal=9||7||1||12||N
 
+;== Phase 1: thresholds (optimize first) ==
 InpLongThreshold=10.0||6.0||1.0||14.0||Y
 InpShortThreshold=-10.0||-14.0||1.0||-6.0||Y
 InpOppositeExitScore=8.0||5.0||1.0||12.0||Y
 
+;== Phase 2: scoring weights (optimize after thresholds settle) ==
+;   These multiply -1..+1 axis scores; small changes shift the regime.
+InpWApsPressure=2.5||1.5||0.5||4.0||N
+InpWApsDivergence=3.0||2.0||0.5||4.5||N
+InpWD1Srsi=1.0||0.5||0.5||2.0||N
+InpWD1Rci=1.0||0.5||0.5||2.0||N
+InpWD1Macd=1.5||1.0||0.5||2.5||N
+InpWH1Srsi=1.5||1.0||0.5||2.5||N
+InpWH1Rci=1.5||1.0||0.5||2.5||N
+InpWH1Macd=2.0||1.0||0.5||3.0||N
+InpWM5Srsi=2.0||1.0||0.5||3.0||N
+InpWM5Rci=2.0||1.0||0.5||3.0||N
+InpWM5Macd=1.0||0.5||0.5||2.0||N
+
+;== Phase 1: risk (optimize together with thresholds) ==
 InpRiskPct=1.0||0.5||0.5||2.0||Y
 InpSlAtrMult=1.5||1.0||0.25||2.5||Y
 InpTpRR=2.0||1.5||0.25||3.0||Y

@@ -10,6 +10,7 @@
 | `04_tasks.md`             | タスクリスト (進捗トラッキング)                  | 利用者           |
 | `05_stock_tools.md`       | 株式 TA ダッシュボード + 毎時 Discord 通知       | 利用者           |
 | `06_streamlit_deploy.md`  | Streamlit Community Cloud デプロイ手順           | 利用者           |
+| `07_mt5_demo_runbook.md`  | MT5 APS_MTF_EA デモ運用手順                      | 利用者 (運用)    |
 
 ## 読む順番
 

@@ -217,6 +217,35 @@ public:
      }
 
    //+----------------------------------------------------------------+
+   //| Read this EA's open-position snapshot. Returns false when flat.|
+   //| `type_out` is "BUY"/"SELL", `volume_out` is in lots,           |
+   //| `pl_out` includes swap + commission.                           |
+   //+----------------------------------------------------------------+
+   bool              PositionSnapshot(string &type_out,
+                                      double &volume_out,
+                                      double &pl_out) const
+     {
+      const int total = PositionsTotal();
+      for(int i=0; i<total; i++)
+        {
+         const ulong ticket = PositionGetTicket(i);
+         if(ticket == 0) continue;
+         if(PositionGetString(POSITION_SYMBOL) != m_symbol) continue;
+         if((long)PositionGetInteger(POSITION_MAGIC) != m_magic) continue;
+         const long type = PositionGetInteger(POSITION_TYPE);
+         type_out   = (type == POSITION_TYPE_BUY) ? "BUY" : "SELL";
+         volume_out = PositionGetDouble(POSITION_VOLUME);
+         pl_out     = PositionGetDouble(POSITION_PROFIT)
+                    + PositionGetDouble(POSITION_SWAP);
+         return true;
+        }
+      type_out   = "";
+      volume_out = 0.0;
+      pl_out     = 0.0;
+      return false;
+     }
+
+   //+----------------------------------------------------------------+
    //| Close all our positions on the symbol. Streak tracking happens |
    //| in OnDealClosed() (driven by OnTradeTransaction).              |
    //+----------------------------------------------------------------+
