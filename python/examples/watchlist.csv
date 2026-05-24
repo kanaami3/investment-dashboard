@@ -1,0 +1,7 @@
+symbol,name,long_threshold,short_threshold,enabled
+7203.T,Toyota Motor,6.0,-6.0,true
+6758.T,Sony Group,6.0,-6.0,true
+9984.T,SoftBank Group,6.5,-6.5,true
+8306.T,MUFG,6.0,-6.0,true
+^N225,Nikkei 225,7.0,-7.0,true
+AAPL,Apple,6.0,-6.0,false
